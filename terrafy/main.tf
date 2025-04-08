@@ -72,7 +72,7 @@ resource "azurerm_key_vault" "kv" {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azurerm_client_config.current.object_id
 
-    secret_permissions = ["get", "list", "set", "delete"]
+    secret_permissions = ["Get", "List", "Set", "Delete"]
   }
 }
 
@@ -107,14 +107,20 @@ resource "azurerm_service_plan" "plan" {
 }
 
 
-resource "azurerm_function_app" "fn" {
+resource "azurerm_windows_function_app" "fn" {
   name                       = "terrafyfn${random_id.rand.hex}"
   location                   = azurerm_resource_group.rg.location
   resource_group_name        = azurerm_resource_group.rg.name
-  app_service_plan_id        = azurerm_service_plan.plan.id
+  service_plan_id            = azurerm_service_plan.plan.id
   storage_account_name       = azurerm_storage_account.storage.name
   storage_account_access_key = azurerm_storage_account.storage.primary_access_key
-  version                    = "~4"
+  functions_extension_version = "~4"
+
+  site_config {
+    application_stack {
+      dotnet_version = "6"  # or "7" depending on what runtime you want
+    }
+  }
 
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME" = "dotnet"
