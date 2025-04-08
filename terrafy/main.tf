@@ -5,7 +5,7 @@ provider "azurerm" {
 data "azurerm_client_config" "current" {}
 
 resource "random_id" "rand" {
- byte_length + 2
+ byte_length = 2
 }
 
 locals {
