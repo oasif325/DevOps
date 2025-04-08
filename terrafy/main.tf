@@ -25,7 +25,7 @@ resource "azurerm_resource_group" "rg" {
  location = var.location
 }
 
-resource "azure_virtual_network" "vnet" {
+resource "azurerm_virtual_network" "vnet" {
  name = "terrafy-${local.environment}-vnet"
  address_space = ["10.0.0.0/16"]
  location = azurerm_resource_group.rg.location
