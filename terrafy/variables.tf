@@ -13,6 +13,11 @@ variable "sql_admin_user" {
  type = string
 }
 
+variable "my_ip" {
+  description = "192.168.0.246"
+  type        = string
+}
+
 variable "sql_admin_password" {
  description = "Password!123"
  type = string
