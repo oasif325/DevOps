@@ -1,0 +1,67 @@
+pipeline {
+  agent any
+
+  parameters {
+    choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Select environment')
+    string(name: 'LOCATION', defaultValue: 'West Europe', description: 'Azure region')
+    string(name: 'MY_IP', defaultValue: '203.0.113.42/32', description: 'IP allowed for SSH')
+    string(name: 'SQL_ADMIN_USER', defaultValue: 'terrafyadmin', description: 'SQL admin user')
+    password(name: 'SQL_ADMIN_PASSWORD', defaultValue: '', description: 'SQL admin password')
+  }
+
+  environment {
+    ARM_CLIENT_ID       = credentials('ARM_CLIENT_ID')
+    ARM_CLIENT_SECRET   = credentials('ARM_CLIENT_SECRET')
+    ARM_TENANT_ID       = credentials('ARM_TENANT_ID')
+    ARM_SUBSCRIPTION_ID = credentials('ARM_SUBSCRIPTION_ID')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git 'https://github.com/oasif325/DevOps.git'
+      }
+    }
+
+    stage('Init') {
+      steps {
+        dir('terrafy') {
+          bat 'terraform init'
+        }
+      }
+    }
+
+    stage('Validate') {
+      steps {
+        dir('terrafy') {
+          bat 'terraform validate'
+        }
+      }
+    }
+
+    stage('Plan') {
+      steps {
+        dir('terrafy') {
+          bat """
+          terraform plan ^
+            -var="env=${params.ENV}" ^
+            -var="location=${params.LOCATION}" ^
+            -var="my_ip=${params.MY_IP}" ^
+            -var="sql_admin_user=${params.SQL_ADMIN_USER}" ^
+            -var="sql_admin_password=${params.SQL_ADMIN_PASSWORD}" ^
+            -out=tfplan
+          """
+        }
+      }
+    }
+
+    stage('Apply') {
+      steps {
+        input message: "Apply changes to ${params.ENV}?"
+        dir('terrafy') {
+          bat 'terraform apply tfplan'
+        }
+      }
+    }
+  }
+}
