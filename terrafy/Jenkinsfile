@@ -2,7 +2,8 @@ pipeline {
   agent any
 
   parameters {
-    choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Select environment')
+    choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Select environment to deploy or destroy')
+    choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Choose Terraform action')
     string(name: 'LOCATION', defaultValue: 'West Europe', description: 'Azure region')
     string(name: 'MY_IP', defaultValue: '203.0.113.42/32', description: 'IP allowed for SSH')
     string(name: 'SQL_ADMIN_USER', defaultValue: 'terrafyadmin', description: 'SQL admin user')
@@ -17,13 +18,7 @@ pipeline {
   }
 
   stages {
-    stage('Checkout') {
-      steps {
-        echo "SCM already checked out the repository to workspace."
-      }
-    }
-
-    stage('Terraform Init') {
+    stage('Init') {
       steps {
         dir('terrafy') {
           bat 'terraform init'
@@ -31,7 +26,7 @@ pipeline {
       }
     }
 
-    stage('Terraform Validate') {
+    stage('Validate') {
       steps {
         dir('terrafy') {
           bat 'terraform validate'
@@ -39,27 +34,47 @@ pipeline {
       }
     }
 
-    stage('Terraform Plan') {
+    stage('Plan or Destroy Preview') {
       steps {
         dir('terrafy') {
-          bat """
-          terraform plan ^
-            -var="env=${params.ENV}" ^
-            -var="location=${params.LOCATION}" ^
-            -var="my_ip=${params.MY_IP}" ^
-            -var="sql_admin_user=${params.SQL_ADMIN_USER}" ^
-            -var="sql_admin_password=${params.SQL_ADMIN_PASSWORD}" ^
-            -out=tfplan
-          """
+          script {
+            if (params.ACTION == 'apply') {
+              bat """
+              terraform plan ^
+                -var="env=${params.ENV}" ^
+                -var="location=${params.LOCATION}" ^
+                -var="my_ip=${params.MY_IP}" ^
+                -var="sql_admin_user=${params.SQL_ADMIN_USER}" ^
+                -var="sql_admin_password=${params.SQL_ADMIN_PASSWORD}" ^
+                -out=tfplan
+              """
+            } else {
+              bat """
+              terraform plan -destroy ^
+                -var="env=${params.ENV}" ^
+                -var="location=${params.LOCATION}" ^
+                -var="my_ip=${params.MY_IP}" ^
+                -var="sql_admin_user=${params.SQL_ADMIN_USER}" ^
+                -var="sql_admin_password=${params.SQL_ADMIN_PASSWORD}" ^
+                -out=tfdestroy
+              """
+            }
+          }
         }
       }
     }
 
-    stage('Terraform Apply') {
+    stage('Apply or Destroy') {
       steps {
-        input message: "Apply changes to ${params.ENV}?"
+        input message: "Are you sure you want to ${params.ACTION.toUpperCase()} resources for ${params.ENV.toUpperCase()}?"
         dir('terrafy') {
-          bat 'terraform apply tfplan'
+          script {
+            if (params.ACTION == 'apply') {
+              bat 'terraform apply tfplan'
+            } else {
+              bat 'terraform apply tfdestroy'
+            }
+          }
         }
       }
     }
