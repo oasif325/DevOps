@@ -19,11 +19,11 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git 'https://github.com/oasif325/DevOps.git'
+        echo "SCM already checked out the repository to workspace."
       }
     }
 
-    stage('Init') {
+    stage('Terraform Init') {
       steps {
         dir('terrafy') {
           bat 'terraform init'
@@ -31,7 +31,7 @@ pipeline {
       }
     }
 
-    stage('Validate') {
+    stage('Terraform Validate') {
       steps {
         dir('terrafy') {
           bat 'terraform validate'
@@ -39,7 +39,7 @@ pipeline {
       }
     }
 
-    stage('Plan') {
+    stage('Terraform Plan') {
       steps {
         dir('terrafy') {
           bat """
@@ -55,7 +55,7 @@ pipeline {
       }
     }
 
-    stage('Apply') {
+    stage('Terraform Apply') {
       steps {
         input message: "Apply changes to ${params.ENV}?"
         dir('terrafy') {
