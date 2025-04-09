@@ -118,7 +118,7 @@ resource "azurerm_windows_function_app" "fn" {
 
   site_config {
     application_stack {
-      dotnet_version = "6"  # or "7" depending on what runtime you want
+      dotnet_version = "v6.0"
     }
   }
 
